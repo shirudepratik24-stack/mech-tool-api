@@ -1,4 +1,4 @@
-﻿"""Live test against Railway deployment."""
+"""Live test against Railway deployment."""
 import urllib.request, json, ssl, sys
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -34,7 +34,7 @@ assert h["status"] == "ok"
 with urllib.request.urlopen(BASE + "/", timeout=15, context=ctx) as r:
     html = r.read().decode("utf-8")
     print(f"[2] GET / (Interactive Web UI)      -> Status={r.status} Content-Type={r.headers.get('content-type')} Length={len(html)}")
-    assert "MechCalc Studio" in html
+    assert "MechEngine" in html
     assert r.status == 200
 
 # 3. Gear materials catalog
