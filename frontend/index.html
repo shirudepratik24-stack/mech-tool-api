@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MechEngine CAD &bull; Gear &amp; Spring Design Calculator Suite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+</head>
+<body class="bg-grid-pattern min-h-screen flex flex-col antialiased">
+  <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-sky-500/20 text-xl font-bold">
+          ⚙️
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-base font-extrabold tracking-tight text-white">MechEngine</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">CAD v1.2</span>
+          </div>
+          <p class="text-xs text-slate-400">AGMA 2001-D04 &bull; IS 7907 / IS 4454 Suite</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-status"></span>
+          <span class="font-medium">Core Online</span>
+        </div>
+        <a href="/docs" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 transition">Swagger</a>
+        <a href="/redoc" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 transition">ReDoc</a>
+        <a href="https://github.com/shirudepratik24-stack/mech-tool-api" target="_blank" class="px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 font-medium transition">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="border-b border-slate-800/80 bg-slate-900/40 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Mechanical Component Design Studio</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">Stress &amp; geometry calculations for spur gears, helical gears, compression springs, and tension springs.</p>
+      </div>
+      <div class="flex items-center space-x-2 text-xs">
+        <span class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-slate-300">Lewis Bending &bull; Hertz Wear</span>
+        <span class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-slate-300">Wahl Factor K</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="border-b border-slate-800 bg-slate-950/60 sticky top-16 z-40 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 sm:space-x-3 overflow-x-auto py-2">
+      <button onclick="switchTab('spur')" id="tab-btn-spur" class="tab-btn active px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold border border-transparent flex items-center space-x-2 transition whitespace-nowrap">
+        <span>⚙️ Spur Gear</span><span class="text-[10px] opacity-70 font-mono">AGMA</span>
+      </button>
+      <button onclick="switchTab('helical')" id="tab-btn-helical" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border border-transparent flex items-center space-x-2 transition whitespace-nowrap">
+        <span>🌀 Helical Gear</span><span class="text-[10px] opacity-70 font-mono">AGMA</span>
+      </button>
+      <button onclick="switchTab('spring-comp')" id="tab-btn-spring-comp" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border border-transparent flex items-center space-x-2 transition whitespace-nowrap">
+        <span>🔩 Compression Spring</span><span class="text-[10px] opacity-70 font-mono">IS 7907</span>
+      </button>
+      <button onclick="switchTab('spring-tens')" id="tab-btn-spring-tens" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border border-transparent flex items-center space-x-2 transition whitespace-nowrap">
+        <span>🪝 Tension Spring</span><span class="text-[10px] opacity-70 font-mono">IS 7907</span>
+      </button>
+      <button onclick="switchTab('materials')" id="tab-btn-materials" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 border border-transparent flex items-center space-x-2 transition whitespace-nowrap">
+        <span>📚 Materials DB</span><span class="text-[10px] opacity-70 font-mono">15 Alloys</span>
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="lg:col-span-5 space-y-6">        <!-- 1. SPUR GEAR FORM -->
+        <div id="tab-spur" class="tab-content glass-card rounded-2xl p-6 border border-slate-800">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">⚙️ Spur Gear Design</h2>
+              <p class="text-xs text-slate-400">Lewis Bending &amp; AGMA Contact Criteria</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="applyPreset('spur', 'conveyor')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">Conveyor</button>
+              <button type="button" onclick="applyPreset('spur', 'automotive')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">Auto 30kW</button>
+            </div>
+          </div>
+
+          <form id="form-spur" onsubmit="calculateSpur(event)" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Transmitted Power (kW)</label>
+                <div class="relative">
+                  <input type="number" step="0.1" id="spur-power" value="10" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+                  <span class="absolute right-3 top-2 text-slate-500 text-[11px]">kW</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Pinion Speed (RPM)</label>
+                <div class="relative">
+                  <input type="number" step="1" id="spur-speed" value="1450" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+                  <span class="absolute right-3 top-2 text-slate-500 text-[11px]">RPM</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Gear Ratio (i)</label>
+                <input type="number" step="0.1" id="spur-ratio" value="3.0" min="1" max="10" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Min Teeth on Pinion</label>
+                <input type="number" id="spur-teeth" value="18" min="12" max="40" class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Pinion Material</label>
+              <select id="spur-mat-pinion" class="w-full input-tech rounded-lg px-3 py-2 text-xs font-medium">
+                <option value="c45_hardened" selected>C45 Steel (Hardened &amp; Tempered, Sut=900 MPa, Sat=241 MPa)</option>
+                <option value="c45_normalised">C45 Steel (Normalised, Sut=700 MPa, Sat=186 MPa)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened (Sut=1100 MPa, Sat=380 MPa)</option>
+                <option value="20cr4_alloy">20Cr4 Alloy Steel (Sut=1000 MPa, Sat=310 MPa)</option>
+                <option value="cast_iron_grade30">Cast Iron Grade 30 (Sut=310 MPa, Sat=69 MPa)</option>
+                <option value="cast_iron_grade20">Cast Iron Grade 20 (Sut=200 MPa, Sat=55 MPa)</option>
+                <option value="stainless_316">Stainless Steel 316 (Sut=515 MPa, Sat=138 MPa)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Gear Material</label>
+              <select id="spur-mat-gear" class="w-full input-tech rounded-lg px-3 py-2 text-xs font-medium">
+                <option value="c45_normalised" selected>C45 Steel (Normalised, Sut=700 MPa, Sat=186 MPa)</option>
+                <option value="c45_hardened">C45 Steel (Hardened &amp; Tempered, Sut=900 MPa, Sat=241 MPa)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened (Sut=1100 MPa, Sat=380 MPa)</option>
+                <option value="cast_iron_grade30">Cast Iron Grade 30 (Sut=310 MPa, Sat=69 MPa)</option>
+                <option value="bronze_tin">Phosphor Bronze (Sut=310 MPa, Sat=65 MPa)</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Target Bending SF</label>
+                <input type="number" step="0.1" id="spur-sf-b" value="1.5" min="1.0" class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Target Contact SF</label>
+                <input type="number" step="0.1" id="spur-sf-c" value="1.2" min="1.0" class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Service &amp; Overload Condition</label>
+              <select id="spur-load" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                <option value="uniform" selected>Uniform (Electric Motor, Centrifugal Pump) Ko=1.0</option>
+                <option value="light_shock">Light Shock (Multi-cyl Engine, Conveyors) Ko=1.25</option>
+                <option value="moderate_shock">Moderate Shock (Single-cyl Engine, Mills) Ko=1.50</option>
+                <option value="heavy_shock">Heavy Shock (Rock Crushers, Punch Presses) Ko=1.75</option>
+              </select>
+            </div>
+
+            <button type="submit" id="btn-spur-submit" class="w-full btn-primary text-white font-bold py-3 rounded-xl shadow-lg mt-2 text-sm flex items-center justify-center space-x-2">
+              <span>Calculate Spur Gear Design</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 2. HELICAL GEAR FORM -->
+        <div id="tab-helical" class="tab-content hidden glass-card rounded-2xl p-6 border border-slate-800">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">🌀 Helical Gear Design</h2>
+              <p class="text-xs text-slate-400">Virtual Teeth &amp; Helix Corrections</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="applyPreset('helical', 'standard')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">15 kW</button>
+              <button type="button" onclick="applyPreset('helical', 'high_speed')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">High Speed</button>
+            </div>
+          </div>
+
+          <form id="form-helical" onsubmit="calculateHelical(event)" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Power (kW)</label>
+                <input type="number" step="0.1" id="hel-power" value="15" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Pinion Speed (RPM)</label>
+                <input type="number" step="1" id="hel-speed" value="1450" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Gear Ratio</label>
+                <input type="number" step="0.1" id="hel-ratio" value="4.0" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Helix Angle (&psi; &deg;)</label>
+                <input type="number" step="0.5" id="hel-helix" value="20" min="10" max="45" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Pinion Material</label>
+              <select id="hel-mat-pinion" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                <option value="c45_hardened" selected>C45 Steel (Hardened &amp; Tempered)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened</option>
+                <option value="20cr4_alloy">20Cr4 Alloy Steel</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Gear Material</label>
+              <select id="hel-mat-gear" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                <option value="c45_normalised" selected>C45 Steel (Normalised)</option>
+                <option value="c45_hardened">C45 Steel (Hardened &amp; Tempered)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened</option>
+              </select>
+            </div>
+
+            <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-xl shadow-lg mt-2 text-sm">
+              Calculate Helical Gear Design
+            </button>
+          </form>
+        </div>        <!-- 3. COMPRESSION SPRING FORM -->
+        <div id="tab-spring-comp" class="tab-content hidden glass-card rounded-2xl p-6 border border-slate-800">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">🔩 Helical Compression Spring</h2>
+              <p class="text-xs text-slate-400">IS 7907 / IS 4454 Wahl Factor Method</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="applyPreset('spring_comp', 'general')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">General</button>
+              <button type="button" onclick="applyPreset('spring_comp', 'suspension')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">1500 N</button>
+            </div>
+          </div>
+
+          <form id="form-spring-comp" onsubmit="calculateCompressionSpring(event)" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Axial Load (N)</label>
+                <div class="relative">
+                  <input type="number" step="1" id="comp-load" value="500" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+                  <span class="absolute right-3 top-2 text-slate-500 text-[11px]">N</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Deflection (mm)</label>
+                <div class="relative">
+                  <input type="number" step="0.5" id="comp-defl" value="25" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+                  <span class="absolute right-3 top-2 text-slate-500 text-[11px]">mm</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Spring Index (C = D/d)</label>
+                <input type="number" step="0.5" id="comp-c" value="6.0" min="4" max="12" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Safety Factor (SF)</label>
+                <input type="number" step="0.1" id="comp-sf" value="1.5" min="1.0" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">Spring Wire Material (IS 4454)</label>
+              <select id="comp-mat" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                <option value="hard_drawn_wire" selected>Hard Drawn Wire (IS 4454 Gr.2 / ASTM A227)</option>
+                <option value="music_wire">Music Wire (IS 4454 Gr.1 / ASTM A228 - High Fatigue)</option>
+                <option value="oil_tempered_wire">Oil Tempered Wire (ASTM A229)</option>
+                <option value="chrome_vanadium">Chrome-Vanadium (ASTM A232)</option>
+                <option value="chrome_silicon">Chrome-Silicon (ASTM A401 - High Stress)</option>
+                <option value="stainless_302">Stainless Steel 302/304 (Corrosion Proof)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1">End Formation</label>
+              <select id="comp-end" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                <option value="closed_ground" selected>Closed &amp; Ground Ends (Standard Engineering)</option>
+                <option value="closed">Closed / Squared Ends (Unground)</option>
+                <option value="plain_ground">Plain &amp; Ground Ends</option>
+                <option value="plain">Plain Ends</option>
+              </select>
+            </div>
+
+            <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-xl shadow-lg mt-2 text-sm">
+              Calculate Spring Parameters
+            </button>
+          </form>
+        </div>
+
+        <!-- 4. TENSION SPRING FORM -->
+        <div id="tab-spring-tens" class="tab-content hidden glass-card rounded-2xl p-6 border border-slate-800">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">🪝 Helical Tension Spring</h2>
+              <p class="text-xs text-slate-400">IS 7907 Body &amp; Hook Stress Verification</p>
+            </div>
+            <button type="button" onclick="applyPreset('spring_tens', 'standard')" class="text-[11px] px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">300 N</button>
+          </div>
+
+          <form id="form-spring-tens" onsubmit="calculateTensionSpring(event)" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Max Working Load (N)</label>
+                <input type="number" step="1" id="tens-load" value="300" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Required Deflection (mm)</label>
+                <input type="number" step="1" id="tens-defl" value="20" required class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Spring Index (C)</label>
+                <input type="number" step="0.5" id="tens-c" value="6.0" min="4" max="12" class="w-full input-tech rounded-lg px-3 py-2 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-slate-300 font-semibold mb-1">Wire Material</label>
+                <select id="tens-mat" class="w-full input-tech rounded-lg px-3 py-2 text-xs">
+                  <option value="chrome_vanadium" selected>Chrome-Vanadium (ASTM A232)</option>
+                  <option value="music_wire">Music Wire (ASTM A228)</option>
+                  <option value="hard_drawn_wire">Hard Drawn Wire</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-xl shadow-lg mt-2 text-sm">
+              Calculate Tension Spring
+            </button>
+          </form>
+        </div>
+
+        <!-- 5. MATERIALS DB TAB (Left panel note) -->
+        <div id="tab-materials" class="tab-content hidden glass-card rounded-2xl p-6 border border-slate-800">
+          <h2 class="text-base font-bold text-white mb-2">📚 Materials Database</h2>
+          <p class="text-xs text-slate-400 mb-4">Properties calibrated per AGMA 2001-D04 &amp; IS 4454 standards.</p>
+          <div class="text-xs text-slate-400 space-y-2">
+            <p>&bull; Select any material from the dropdown menus to automatically apply its ultimate tensile strength, yield limits, and elastic modulus.</p>
+            <p>&bull; Detailed property matrix is displayed in the main inspection view on the right.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Interactive Visual CAD & Results View -->
+      <div class="lg:col-span-7 space-y-6">
+        <div id="results-placeholder" class="glass-card rounded-2xl p-12 text-center border border-dashed border-slate-800">
+          <div class="w-16 h-16 rounded-2xl bg-slate-800/80 mx-auto flex items-center justify-center text-3xl mb-4 border border-slate-700">
+            📊
+          </div>
+          <h3 class="text-lg font-bold text-white">Engineering Calculation Workspace</h3>
+          <p class="text-xs text-slate-400 max-w-md mx-auto mt-2">
+            Select your design parameters on the left and click <strong>Calculate</strong> to inspect 2D geometry schematics, Lewis/Wahl stress analyses, and safety factor compliance.
+          </p>
+        </div>        <!-- Live Results Container (hidden initially) -->
+        <div id="results-container" class="hidden space-y-6">
+
+          <!-- Verification Status Banner -->
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Design Compliance Status</span>
+              <h3 id="res-status-text" class="text-lg font-black text-white mt-0.5 tracking-tight">VERIFIED: SAFE AGMA DESIGN</h3>
+            </div>
+            <div id="res-status-badge" class="px-3.5 py-1.5 rounded-full text-xs font-black badge-status-pass uppercase tracking-wider">
+              PASS
+            </div>
+          </div>
+
+          <!-- 2D Schematic Preview Canvas -->
+          <div id="preview-canvas-container" class="rounded-2xl p-4 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span> 2D Geometry Schematic
+              </span>
+              <button onclick="copyResultsJSON()" class="text-[11px] text-sky-400 hover:text-sky-300 flex items-center gap-1">
+                <span>📋 Copy JSON Report</span>
+              </button>
+            </div>
+            <canvas id="schematic-canvas" width="560" height="240" class="w-full h-auto rounded-lg"></canvas>
+          </div>
+
+          <!-- 4 Core Geometry Metrics -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="glass-card-subtle p-3.5 rounded-xl border border-slate-800">
+              <span id="metric-1-label" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Standard Module</span>
+              <div id="metric-1-val" class="text-xl font-black text-sky-400 font-mono mt-1">4.0 mm</div>
+              <span id="metric-1-sub" class="text-[10px] text-slate-400 mt-0.5 block truncate">IS 2535 Series</span>
+            </div>
+            <div class="glass-card-subtle p-3.5 rounded-xl border border-slate-800">
+              <span id="metric-2-label" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Face Width</span>
+              <div id="metric-2-val" class="text-xl font-black text-white font-mono mt-1">40.0 mm</div>
+              <span id="metric-2-sub" class="text-[10px] text-slate-400 mt-0.5 block truncate">F = 10m</span>
+            </div>
+            <div class="glass-card-subtle p-3.5 rounded-xl border border-slate-800">
+              <span id="metric-3-label" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Pinion PCD</span>
+              <div id="metric-3-val" class="text-xl font-black text-white font-mono mt-1">72.0 mm</div>
+              <span id="metric-3-sub" class="text-[10px] text-slate-400 mt-0.5 block truncate">18 Teeth</span>
+            </div>
+            <div class="glass-card-subtle p-3.5 rounded-xl border border-slate-800">
+              <span id="metric-4-label" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Center Distance</span>
+              <div id="metric-4-val" class="text-xl font-black text-white font-mono mt-1">144.0 mm</div>
+              <span id="metric-4-sub" class="text-[10px] text-slate-400 mt-0.5 block truncate">Shaft Spacing</span>
+            </div>
+          </div>          <!-- Stress & Safety Factor Visual Meters -->
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Stress &amp; Safety Factor Verification</h4>
+            <div id="stress-meter-bending" class="space-y-1"></div>
+            <div id="stress-meter-contact" class="space-y-1"></div>
+          </div>
+
+          <!-- Detailed Specifications Table -->
+          <div class="glass-card rounded-2xl p-5 border border-slate-800">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Computed Dimensions &amp; Analysis Breakdown</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <tbody id="res-detailed-table" class="divide-y divide-slate-800/80">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recommendations Banner -->
+          <div class="glass-card-subtle rounded-xl p-4 border border-sky-500/20 text-xs flex items-start space-x-3">
+            <div class="text-lg">💡</div>
+            <div>
+              <span class="font-bold text-sky-400 block mb-0.5">Engineering Recommendations</span>
+              <p id="res-recommendations" class="text-slate-300 leading-relaxed"></p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Materials Inspection View (When Materials tab is open) -->
+        <div id="materials-view" class="glass-card rounded-2xl p-6 border border-slate-800 hidden">
+          <div class="space-y-6">
+            <div>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-2">⚙️ AGMA Gear Material Library</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-900 text-slate-400 uppercase font-mono">
+                    <tr>
+                      <th class="p-3">Material</th>
+                      <th class="p-3">Tensile Sut</th>
+                      <th class="p-3">Yield Sy</th>
+                      <th class="p-3">Hardness</th>
+                      <th class="p-3">Sat (Bending)</th>
+                      <th class="p-3">Sac (Contact)</th>
+                      <th class="p-3">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mat-gear-table"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-2">🔩 IS 4454 Spring Wire Material Library</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-900 text-slate-400 uppercase font-mono">
+                    <tr>
+                      <th class="p-3">Material</th>
+                      <th class="p-3">Shear Modulus G</th>
+                      <th class="p-3">Elastic Modulus E</th>
+                      <th class="p-3">Max Temp</th>
+                      <th class="p-3">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mat-spring-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <p>MechEngine CAD &bull; AGMA 2001-D04 &amp; IS 7907 Mechanical Design Suite &bull; FastAPI Backend</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

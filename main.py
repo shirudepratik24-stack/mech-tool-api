@@ -1,15 +1,15 @@
 """
-Gear / Spring Design Calculator API & Web UI
-============================================
+Gear / Spring Design Calculator API & Web Studio
+================================================
 FastAPI application with AGMA 2001-D04 gear formulas,
-IS 7907 spring formulas, and interactive Web UI.
+IS 7907 spring formulas, and professional frontend UI.
 """
 
 import os
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routers import gear, spring
@@ -18,9 +18,9 @@ from app.schemas.gear import SpurGearInput
 from app.schemas.spring import CompressionSpringInput
 
 app = FastAPI(
-    title="Gear / Spring Design Calculator API",
+    title="MechEngine CAD API",
     description="AGMA 2001-D04 Gear Design & IS 7907 Spring Design Calculator Suite",
-    version="1.0.0",
+    version="1.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -35,25 +35,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static folder if exists
-static_path = Path(__file__).parent / "static"
-if static_path.exists():
-    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+# Base frontend directory
+frontend_path = Path(__file__).parent / "frontend"
+if frontend_path.exists():
+    app.mount("/frontend", StaticFiles(directory=str(frontend_path)), name="frontend")
 
-# Include routers
+# Include calculation routers
 app.include_router(gear.router)
 app.include_router(spring.router)
 
 
 # ---------------------------------------------------------------------------
-# Root UI — Serves the interactive calculator web interface
+# Root UI — Serves the Professional Engineering Web CAD
 # ---------------------------------------------------------------------------
-@app.get("/", response_class=HTMLResponse, tags=["Web UI"], summary="Interactive Web Calculator UI")
+@app.get("/", response_class=HTMLResponse, tags=["Web UI"], summary="Interactive Engineering CAD UI")
 def serve_home(request: Request):
-    index_file = static_path / "index.html"
+    index_file = frontend_path / "index.html"
     if index_file.exists():
-        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
-    return HTMLResponse("<h2>MechCalc API is running. Visit <a href='/docs'>/docs</a></h2>")
+        return FileResponse(index_file, media_type="text/html")
+    return HTMLResponse("<h2>MechEngine CAD is running. Visit <a href='/docs'>/docs</a></h2>")
+
+
+@app.get("/style.css", include_in_schema=False)
+def serve_css():
+    css_file = frontend_path / "style.css"
+    if css_file.exists():
+        return FileResponse(css_file, media_type="text/css")
+    return JSONResponse(status_code=404, content={"error": "style.css not found"})
+
+
+@app.get("/script.js", include_in_schema=False)
+def serve_js():
+    js_file = frontend_path / "script.js"
+    if js_file.exists():
+        return FileResponse(js_file, media_type="application/javascript")
+    return JSONResponse(status_code=404, content={"error": "script.js not found"})
 
 
 # ---------------------------------------------------------------------------

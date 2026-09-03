@@ -313,6 +313,7 @@ def design_helical_gear(
     sigma_b_pinion = (Wt * math.cos(psi) * Kv * Ko * Ks * Km) / (F * m_n * Y1)
     Y2 = _geometry_factor_bending(N2v, helix_angle_deg)
     sigma_b_gear = (Wt * math.cos(psi) * Kv * Ko * Ks * Km) / (F * m_n * Y2)
+
     SF_b_pinion = mat_p["Sat"] / sigma_b_pinion
     SF_b_gear = mat_g["Sat"] / sigma_b_gear
 
