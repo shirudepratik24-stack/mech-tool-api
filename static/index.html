@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MechCalc - Gear & Spring Design Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-btn.active { border-bottom: 3px solid #0284c7; color: #0284c7; font-weight: 600; }
+    .badge-pass { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-fail { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+  <header class="bg-slate-900 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-sky-600 p-2 rounded-lg text-white font-bold text-xl">⚙️</div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">MechCalc Studio</h1>
+          <p class="text-xs text-slate-400">Engineering Design Suite (AGMA 2001-D04 &bull; IS 7907 / IS 4454)</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2 text-xs">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700">
+          <span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> API Online
+        </span>
+        <a href="/docs" target="_blank" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-200">Swagger Docs</a>
+        <a href="/redoc" target="_blank" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-200">ReDoc</a>
+        <a href="https://github.com/shirudepratik24-stack/mech-tool-api" target="_blank" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-200">GitHub</a>
+      </div>
+    </div>
+  </header>  <div class="bg-slate-800 text-white py-6 border-b border-slate-700">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold">Mechanical Component Design Calculator</h2>
+        <p class="text-sm text-slate-300 mt-1">Compute module, face width, stresses, wire sizing, coil dimensions, and safety factors.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <span class="bg-slate-700 px-3 py-1 rounded border border-slate-600">Standard AGMA Modules</span>
+        <span class="bg-slate-700 px-3 py-1 rounded border border-slate-600">IS 4454 Preferred Wires</span>
+        <span class="bg-slate-700 px-3 py-1 rounded border border-slate-600">Wahl Curvature Factor</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex space-x-6 overflow-x-auto">
+      <button onclick="switchTab('spur')" id="tab-btn-spur" class="tab-btn active py-3 text-sm font-medium border-b-2 border-transparent transition">⚙️ Spur Gear (AGMA)</button>
+      <button onclick="switchTab('helical')" id="tab-btn-helical" class="tab-btn py-3 text-sm font-medium text-slate-600 hover:text-sky-600 border-b-2 border-transparent transition">🌀 Helical Gear (AGMA)</button>
+      <button onclick="switchTab('spring-comp')" id="tab-btn-spring-comp" class="tab-btn py-3 text-sm font-medium text-slate-600 hover:text-sky-600 border-b-2 border-transparent transition">🔩 Compression Spring (IS 7907)</button>
+      <button onclick="switchTab('spring-tens')" id="tab-btn-spring-tens" class="tab-btn py-3 text-sm font-medium text-slate-600 hover:text-sky-600 border-b-2 border-transparent transition">🪝 Tension Spring (IS 7907)</button>
+      <button onclick="switchTab('materials')" id="tab-btn-materials" class="tab-btn py-3 text-sm font-medium text-slate-600 hover:text-sky-600 border-b-2 border-transparent transition">📚 Materials Catalog</button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">    <!-- 1. SPUR GEAR TAB -->
+    <div id="tab-spur" class="tab-content">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg text-slate-900">Spur Gear Inputs</h3>
+            <button type="button" onclick="loadSpurPreset(10, 1450, 3.0)" class="text-xs text-sky-600 hover:underline">Load Example</button>
+          </div>
+          <form id="form-spur" onsubmit="calculateSpur(event)" class="space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Power (kW)</label>
+                <input type="number" step="0.1" id="spur-power" value="10" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Pinion Speed (RPM)</label>
+                <input type="number" step="1" id="spur-speed" value="1450" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Gear Ratio</label>
+                <input type="number" step="0.1" id="spur-ratio" value="3.0" min="1" max="10" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Min Teeth (Pinion)</label>
+                <input type="number" id="spur-teeth" value="18" min="12" max="40" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Pinion Material</label>
+              <select id="spur-mat-pinion" class="w-full px-3 py-2 border rounded-lg bg-white">
+                <option value="c45_hardened" selected>C45 Steel (Hardened & Tempered)</option>
+                <option value="c45_normalised">C45 Steel (Normalised)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened</option>
+                <option value="20cr4_alloy">20Cr4 Alloy Steel</option>
+                <option value="cast_iron_grade30">Cast Iron Grade 30</option>
+                <option value="cast_iron_grade20">Cast Iron Grade 20</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Gear Material</label>
+              <select id="spur-mat-gear" class="w-full px-3 py-2 border rounded-lg bg-white">
+                <option value="c45_normalised" selected>C45 Steel (Normalised)</option>
+                <option value="c45_hardened">C45 Steel (Hardened & Tempered)</option>
+                <option value="cast_iron_grade30">Cast Iron Grade 30</option>
+                <option value="bronze_tin">Phosphor Bronze</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Req. Bending SF</label>
+                <input type="number" step="0.1" id="spur-sf-b" value="1.5" min="1.0" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Req. Contact SF</label>
+                <input type="number" step="0.1" id="spur-sf-c" value="1.2" min="1.0" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <button type="submit" id="btn-spur-submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition">
+              Calculate Spur Gear Design
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7 space-y-4">
+          <div id="spur-result-placeholder" class="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
+            <p class="text-4xl mb-2">⚙️</p>
+            <p class="font-medium text-slate-700">Ready to compute</p>
+            <p class="text-xs text-slate-400 mt-1">Configure inputs and click Calculate.</p>
+          </div>
+
+          <div id="spur-result" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Design Status</span>
+                <h4 id="spur-status-text" class="text-xl font-bold mt-0.5">PASS</h4>
+              </div>
+              <div id="spur-status-badge" class="px-4 py-1.5 rounded-full text-sm font-bold badge-pass">SAFE DESIGN</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Key Design Dimensions</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Standard Module</div>
+                  <div id="spur-res-module" class="text-2xl font-bold text-sky-600 mt-1">4.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Face Width (F)</div>
+                  <div id="spur-res-width" class="text-2xl font-bold text-slate-800 mt-1">40.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Pinion Teeth (N1)</div>
+                  <div id="spur-res-n1" class="text-2xl font-bold text-slate-800 mt-1">18</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Gear Teeth (N2)</div>
+                  <div id="spur-res-n2" class="text-2xl font-bold text-slate-800 mt-1">54</div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 mt-4 text-xs">
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Pinion PCD:</span>
+                  <span id="spur-res-d1" class="font-semibold text-slate-800 float-right">72.0 mm</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Gear PCD:</span>
+                  <span id="spur-res-d2" class="font-semibold text-slate-800 float-right">216.0 mm</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Center Distance:</span>
+                  <span id="spur-res-cd" class="font-semibold text-slate-800 float-right">144.0 mm</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Stress Analysis & Safety Factors</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-100 text-slate-600 font-semibold uppercase">
+                    <tr>
+                      <th class="p-2">Check</th>
+                      <th class="p-2">Induced Stress</th>
+                      <th class="p-2">Allowable Stress</th>
+                      <th class="p-2">Actual SF</th>
+                      <th class="p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr>
+                      <td class="p-2 font-medium">Pinion Bending (Lewis)</td>
+                      <td id="spur-b-stress" class="p-2">91.6 MPa</td>
+                      <td id="spur-b-allow" class="p-2">241.0 MPa</td>
+                      <td id="spur-b-sf" class="p-2 font-bold text-emerald-600">2.63</td>
+                      <td class="p-2"><span id="spur-b-status" class="px-2 py-0.5 rounded text-[10px] font-bold badge-pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                      <td class="p-2 font-medium">Surface Contact (Hertz)</td>
+                      <td id="spur-c-stress" class="p-2">239.5 MPa</td>
+                      <td id="spur-c-allow" class="p-2">1550.0 MPa</td>
+                      <td id="spur-c-sf" class="p-2 font-bold text-emerald-600">6.47</td>
+                      <td class="p-2"><span id="spur-c-status" class="px-2 py-0.5 rounded text-[10px] font-bold badge-pass">PASS</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="spur-recs-box" class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-xs text-blue-900">
+              <span class="font-bold">Engineering Notes: </span>
+              <span id="spur-recs-text">Design satisfies all AGMA criteria. Ready for manufacturing.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>    <!-- 2. HELICAL GEAR TAB -->
+    <div id="tab-helical" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="font-bold text-lg text-slate-900 mb-4">Helical Gear Inputs</h3>
+          <form id="form-helical" onsubmit="calculateHelical(event)" class="space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Power (kW)</label>
+                <input type="number" step="0.1" id="hel-power" value="15" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Pinion Speed (RPM)</label>
+                <input type="number" step="1" id="hel-speed" value="1450" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Gear Ratio</label>
+                <input type="number" step="0.1" id="hel-ratio" value="4.0" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Helix Angle (&deg;)</label>
+                <input type="number" step="0.5" id="hel-helix" value="20" min="10" max="45" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Pinion Material</label>
+              <select id="hel-mat-pinion" class="w-full px-3 py-2 border rounded-lg bg-white">
+                <option value="c45_hardened" selected>C45 Steel (Hardened & Tempered)</option>
+                <option value="en36_case_hardened">EN36 Case Hardened</option>
+                <option value="20cr4_alloy">20Cr4 Alloy Steel</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Gear Material</label>
+              <select id="hel-mat-gear" class="w-full px-3 py-2 border rounded-lg bg-white">
+                <option value="c45_normalised" selected>C45 Steel (Normalised)</option>
+                <option value="c45_hardened">C45 Steel (Hardened & Tempered)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition">
+              Calculate Helical Gear Design
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div id="hel-result-placeholder" class="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
+            <p class="text-4xl mb-2">🌀</p>
+            <p class="font-medium text-slate-700">Ready to compute helical gear</p>
+            <p class="text-xs text-slate-400 mt-1">Configure inputs and click Calculate.</p>
+          </div>
+
+          <div id="hel-result" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Status</span>
+                <h4 id="hel-status-text" class="text-xl font-bold mt-0.5">PASS</h4>
+              </div>
+              <div id="hel-status-badge" class="px-4 py-1.5 rounded-full text-sm font-bold badge-pass">SAFE</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Helical Dimensions</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Normal Module (mn)</div>
+                  <div id="hel-res-mn" class="text-2xl font-bold text-sky-600 mt-1">4.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Transverse (mt)</div>
+                  <div id="hel-res-mt" class="text-2xl font-bold text-slate-800 mt-1">4.26 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Face Width (F)</div>
+                  <div id="hel-res-f" class="text-2xl font-bold text-slate-800 mt-1">48.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Lead</div>
+                  <div id="hel-res-lead" class="text-2xl font-bold text-slate-800 mt-1">661 mm</div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 mt-4 text-xs">
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Pinion PCD:</span>
+                  <span id="hel-res-d1" class="font-semibold text-slate-800 float-right">76.6 mm</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Virtual Teeth:</span>
+                  <span id="hel-res-n1v" class="font-semibold text-slate-800 float-right">22</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Bending SF:</span>
+                  <span id="hel-res-sf" class="font-semibold text-emerald-600 float-right">2.62</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. COMPRESSION SPRING TAB -->
+    <div id="tab-spring-comp" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="font-bold text-lg text-slate-900 mb-4">Compression Spring (IS 7907)</h3>
+          <form id="form-spring-comp" onsubmit="calculateCompressionSpring(event)" class="space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Axial Load (N)</label>
+                <input type="number" step="1" id="comp-load" value="500" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Deflection (mm)</label>
+                <input type="number" step="0.5" id="comp-defl" value="25" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Spring Index (C = D/d)</label>
+                <input type="number" step="0.5" id="comp-c" value="6.0" min="4" max="12" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Factor of Safety</label>
+                <input type="number" step="0.1" id="comp-sf" value="1.5" min="1.0" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Wire Material (IS 4454)</label>
+              <select id="comp-mat" class="w-full px-3 py-2 border rounded-lg bg-white">
+                <option value="hard_drawn_wire" selected>Hard Drawn Wire (IS 4454 Gr.2)</option>
+                <option value="music_wire">Music Wire (IS 4454 Gr.1 / ASTM A228)</option>
+                <option value="oil_tempered_wire">Oil Tempered Wire (ASTM A229)</option>
+                <option value="chrome_vanadium">Chrome-Vanadium (ASTM A232)</option>
+                <option value="stainless_302">Stainless Steel 302/304</option>
+              </select>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition">
+              Calculate Spring Parameters
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div id="comp-result-placeholder" class="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
+            <p class="text-4xl mb-2">🔩</p>
+            <p class="font-medium text-slate-700">Ready to compute spring</p>
+            <p class="text-xs text-slate-400 mt-1">Wahl factor, wire diameter, stiffness, and solid length.</p>
+          </div>
+
+          <div id="comp-result" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">IS 7907 Verification</span>
+                <h4 id="comp-status-text" class="text-xl font-bold mt-0.5">PASS</h4>
+              </div>
+              <div id="comp-status-badge" class="px-4 py-1.5 rounded-full text-sm font-bold badge-pass">SAFE</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Spring Geometry & Sizing</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Wire Dia (d)</div>
+                  <div id="comp-res-d" class="text-2xl font-bold text-sky-600 mt-1">6.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Mean Dia (D)</div>
+                  <div id="comp-res-dm" class="text-2xl font-bold text-slate-800 mt-1">36.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Active Coils</div>
+                  <div id="comp-res-na" class="text-2xl font-bold text-slate-800 mt-1">14.25</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg">
+                  <div class="text-xs text-slate-500">Free Length</div>
+                  <div id="comp-res-lo" class="text-2xl font-bold text-slate-800 mt-1">143 mm</div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 mt-4 text-xs">
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Outer Dia (OD):</span>
+                  <span id="comp-res-od" class="font-semibold text-slate-800 float-right">42.0 mm</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Stiffness (k):</span>
+                  <span id="comp-res-k" class="font-semibold text-slate-800 float-right">20.0 N/mm</span>
+                </div>
+                <div class="p-2.5 bg-slate-50 rounded border">
+                  <span class="text-slate-500">Wahl Factor (K):</span>
+                  <span id="comp-res-wahl" class="font-semibold text-slate-800 float-right">1.252</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 text-xs space-y-2">
+              <div class="flex justify-between items-center py-1 border-b">
+                <span class="text-slate-600">Induced Shear Stress (&tau;):</span>
+                <span id="comp-res-tau" class="font-bold text-slate-800">265.8 MPa</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b">
+                <span class="text-slate-600">Allowable Shear Stress:</span>
+                <span id="comp-res-tau-allow" class="font-semibold text-slate-800">316.0 MPa</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-slate-600">Safety Factor:</span>
+                <span id="comp-res-sf" class="font-bold text-emerald-600">1.78</span>
+              </div>
+              <div id="comp-buckling" class="p-2 bg-slate-50 rounded text-slate-600 text-[11px]">
+                No buckling risk (Lf/D &le; 4).
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>    <!-- 4. TENSION SPRING TAB -->
+    <div id="tab-spring-tens" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="font-bold text-lg text-slate-900 mb-4">Tension Spring Inputs</h3>
+          <form id="form-spring-tens" onsubmit="calculateTensionSpring(event)" class="space-y-4 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Max Load (N)</label>
+                <input type="number" step="1" id="tens-load" value="300" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Deflection (mm)</label>
+                <input type="number" step="1" id="tens-defl" value="20" required class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Spring Index (C)</label>
+                <input type="number" step="0.5" id="tens-c" value="6.0" min="4" max="12" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Wire Material</label>
+                <select id="tens-mat" class="w-full px-3 py-2 border rounded-lg bg-white">
+                  <option value="chrome_vanadium" selected>Chrome-Vanadium (ASTM A232)</option>
+                  <option value="music_wire">Music Wire (ASTM A228)</option>
+                  <option value="hard_drawn_wire">Hard Drawn Wire</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition">
+              Calculate Tension Spring
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div id="tens-result-placeholder" class="bg-white p-12 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
+            <p class="text-4xl mb-2">🪝</p>
+            <p class="font-medium text-slate-700">Ready to compute tension spring</p>
+            <p class="text-xs text-slate-400 mt-1">Body stress + hook stress checks.</p>
+          </div>
+
+          <div id="tens-result" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Tension Results</h4>
+              <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="p-3 bg-slate-50 rounded">
+                  <div class="text-xs text-slate-500">Wire Dia (d)</div>
+                  <div id="tens-res-d" class="text-xl font-bold text-sky-600 mt-1">4.0 mm</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded">
+                  <div class="text-xs text-slate-500">Active Coils</div>
+                  <div id="tens-res-na" class="text-xl font-bold text-slate-800 mt-1">12.25</div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded">
+                  <div class="text-xs text-slate-500">Body SF</div>
+                  <div id="tens-res-sf" class="text-xl font-bold text-emerald-600 mt-1">2.09</div>
+                </div>
+              </div>
+              <div class="mt-3 p-2.5 bg-slate-50 rounded border text-xs flex justify-between">
+                <span>Hook Stress:</span>
+                <span id="tens-res-hook" class="font-semibold text-slate-800">354.7 MPa (PASS)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. MATERIALS CATALOG TAB -->
+    <div id="tab-materials" class="tab-content hidden">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+        <div>
+          <h3 class="font-bold text-lg text-slate-900">Standard Materials Catalog</h3>
+          <p class="text-xs text-slate-500">Properties calibrated for AGMA gear analysis and IS 7907 spring calculations.</p>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-sm text-slate-700 mb-2">⚙️ Gear Materials (AGMA 2101-D04)</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-600 uppercase">
+                <tr>
+                  <th class="p-2.5">Material</th>
+                  <th class="p-2.5">Tensile (Sut)</th>
+                  <th class="p-2.5">Yield (Sy)</th>
+                  <th class="p-2.5">Hardness (BHN)</th>
+                  <th class="p-2.5">Allow. Bending</th>
+                  <th class="p-2.5">Allow. Contact</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100" id="mat-gear-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-sm text-slate-700 mb-2">🔩 Spring Wire Materials (IS 4454 / ASTM)</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-600 uppercase">
+                <tr>
+                  <th class="p-2.5">Wire Type</th>
+                  <th class="p-2.5">Shear Modulus (G)</th>
+                  <th class="p-2.5">Elastic Modulus (E)</th>
+                  <th class="p-2.5">Max Temp</th>
+                  <th class="p-2.5">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100" id="mat-spring-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <p>MechCalc Studio &bull; AGMA 2001-D04 &amp; IS 7907 Standard Formulas &bull; Deployed on Railway.app</p>
+  </footer>  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'text-sky-600'));
+
+      const activeContent = document.getElementById('tab-' + tabId);
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      if (activeContent) activeContent.classList.remove('hidden');
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (tabId === 'materials') loadMaterialsCatalog();
+    }
+
+    function loadSpurPreset(power, speed, ratio) {
+      document.getElementById('spur-power').value = power;
+      document.getElementById('spur-speed').value = speed;
+      document.getElementById('spur-ratio').value = ratio;
+    }
+
+    async function calculateSpur(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-spur-submit');
+      btn.disabled = true;
+      btn.innerText = 'Calculating...';
+
+      const payload = {
+        power_kw: parseFloat(document.getElementById('spur-power').value),
+        speed_rpm: parseFloat(document.getElementById('spur-speed').value),
+        gear_ratio: parseFloat(document.getElementById('spur-ratio').value),
+        min_teeth_pinion: parseInt(document.getElementById('spur-teeth').value),
+        pinion_material: document.getElementById('spur-mat-pinion').value,
+        gear_material: document.getElementById('spur-mat-gear').value,
+        safety_factor_bending: parseFloat(document.getElementById('spur-sf-b').value),
+        safety_factor_contact: parseFloat(document.getElementById('spur-sf-c').value),
+        load_type: 'uniform'
+      };
+
+      try {
+        const res = await fetch('/api/v1/gear/spur', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Calculation failed');
+
+        document.getElementById('spur-result-placeholder').classList.add('hidden');
+        document.getElementById('spur-result').classList.remove('hidden');
+
+        const dv = data.design_values;
+        const sa = data.stress_analysis;
+
+        document.getElementById('spur-res-module').innerText = dv.module_m + ' mm';
+        document.getElementById('spur-res-width').innerText = dv.face_width_mm + ' mm';
+        document.getElementById('spur-res-n1').innerText = dv.pinion_teeth;
+        document.getElementById('spur-res-n2').innerText = dv.gear_teeth;
+        document.getElementById('spur-res-d1').innerText = dv.pinion_pitch_diameter_mm + ' mm';
+        document.getElementById('spur-res-d2').innerText = dv.gear_pitch_diameter_mm + ' mm';
+        document.getElementById('spur-res-cd').innerText = dv.centre_distance_mm + ' mm';
+
+        document.getElementById('spur-b-stress').innerText = sa.bending.pinion_bending_stress_MPa + ' MPa';
+        document.getElementById('spur-b-allow').innerText = sa.bending.pinion_allowable_bending_MPa + ' MPa';
+        document.getElementById('spur-b-sf').innerText = sa.bending.pinion_bending_SF;
+
+        document.getElementById('spur-c-stress').innerText = sa.contact.contact_stress_MPa + ' MPa';
+        document.getElementById('spur-c-allow').innerText = sa.contact.pinion_allowable_contact_MPa + ' MPa';
+        document.getElementById('spur-c-sf').innerText = sa.contact.pinion_contact_SF;
+
+        const isSafe = data.overall_status === 'PASS';
+        const badge = document.getElementById('spur-status-badge');
+        badge.innerText = isSafe ? 'SAFE DESIGN' : 'CHECK FAILED';
+        badge.className = isSafe ? 'px-4 py-1.5 rounded-full text-sm font-bold badge-pass' : 'px-4 py-1.5 rounded-full text-sm font-bold badge-fail';
+        document.getElementById('spur-status-text').innerText = data.overall_status;
+        document.getElementById('spur-recs-text').innerText = data.recommendations.join(' ');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Calculate Spur Gear Design';
+      }
+    }
+
+    async function calculateHelical(e) {
+      e.preventDefault();
+      const payload = {
+        power_kw: parseFloat(document.getElementById('hel-power').value),
+        speed_rpm: parseFloat(document.getElementById('hel-speed').value),
+        gear_ratio: parseFloat(document.getElementById('hel-ratio').value),
+        helix_angle_deg: parseFloat(document.getElementById('hel-helix').value),
+        pinion_material: document.getElementById('hel-mat-pinion').value,
+        gear_material: document.getElementById('hel-mat-gear').value
+      };
+
+      try {
+        const res = await fetch('/api/v1/gear/helical', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Calculation failed');
+
+        document.getElementById('hel-result-placeholder').classList.add('hidden');
+        document.getElementById('hel-result').classList.remove('hidden');
+
+        const dv = data.design_values;
+        document.getElementById('hel-res-mn').innerText = dv.normal_module_mn + ' mm';
+        document.getElementById('hel-res-mt').innerText = dv.transverse_module_mt + ' mm';
+        document.getElementById('hel-res-f').innerText = dv.face_width_mm + ' mm';
+        document.getElementById('hel-res-lead').innerText = dv.lead_mm + ' mm';
+        document.getElementById('hel-res-d1').innerText = dv.pinion_pitch_diameter_mm + ' mm';
+        document.getElementById('hel-res-n1v').innerText = dv.virtual_teeth_pinion;
+        document.getElementById('hel-res-sf').innerText = data.stress_analysis.bending.pinion_bending_SF;
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function calculateCompressionSpring(e) {
+      e.preventDefault();
+      const payload = {
+        load_N: parseFloat(document.getElementById('comp-load').value),
+        deflection_mm: parseFloat(document.getElementById('comp-defl').value),
+        spring_index: parseFloat(document.getElementById('comp-c').value),
+        safety_factor: parseFloat(document.getElementById('comp-sf').value),
+        material: document.getElementById('comp-mat').value,
+        end_type: 'closed_ground'
+      };
+
+      try {
+        const res = await fetch('/api/v1/spring/helical-compression', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Calculation failed');
+
+        document.getElementById('comp-result-placeholder').classList.add('hidden');
+        document.getElementById('comp-result').classList.remove('hidden');
+
+        const dv = data.design_values;
+        const sa = data.stress_analysis;
+        document.getElementById('comp-res-d').innerText = dv.wire_diameter_d_mm + ' mm';
+        document.getElementById('comp-res-dm').innerText = dv.mean_coil_diameter_D_mm + ' mm';
+        document.getElementById('comp-res-na').innerText = dv.active_coils_Na;
+        document.getElementById('comp-res-lo').innerText = dv.free_length_Lo_mm + ' mm';
+        document.getElementById('comp-res-od').innerText = dv.outer_diameter_OD_mm + ' mm';
+        document.getElementById('comp-res-k').innerText = dv.spring_rate_k_N_mm + ' N/mm';
+        document.getElementById('comp-res-wahl').innerText = dv.Wahl_correction_K;
+        document.getElementById('comp-res-tau').innerText = sa.actual_shear_stress_tau_MPa + ' MPa';
+        document.getElementById('comp-res-tau-allow').innerText = sa.allowable_shear_stress_MPa + ' MPa';
+        document.getElementById('comp-res-sf').innerText = sa.actual_safety_factor;
+        document.getElementById('comp-buckling').innerText = data.geometry_checks.buckling_note;
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function calculateTensionSpring(e) {
+      e.preventDefault();
+      const payload = {
+        load_N: parseFloat(document.getElementById('tens-load').value),
+        deflection_mm: parseFloat(document.getElementById('tens-defl').value),
+        spring_index: parseFloat(document.getElementById('tens-c').value),
+        material: document.getElementById('tens-mat').value
+      };
+
+      try {
+        const res = await fetch('/api/v1/spring/helical-tension', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Calculation failed');
+
+        document.getElementById('tens-result-placeholder').classList.add('hidden');
+        document.getElementById('tens-result').classList.remove('hidden');
+
+        const dv = data.design_values;
+        document.getElementById('tens-res-d').innerText = dv.wire_diameter_d_mm + ' mm';
+        document.getElementById('tens-res-na').innerText = dv.active_coils_Na;
+        document.getElementById('tens-res-sf').innerText = data.stress_analysis.actual_safety_factor;
+        document.getElementById('tens-res-hook').innerText = data.stress_analysis.hook_bending_stress_MPa + ' MPa (' + data.stress_analysis.hook_status + ')';
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function loadMaterialsCatalog() {
+      try {
+        const [resG, resS] = await Promise.all([
+          fetch('/api/v1/gear/materials'),
+          fetch('/api/v1/spring/materials')
+        ]);
+        const dataG = await resG.json();
+        const dataS = await resS.json();
+
+        const gTable = document.getElementById('mat-gear-table');
+        gTable.innerHTML = '';
+        for (const [k, v] of Object.entries(dataG.materials)) {
+          gTable.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5 font-medium">${v.name}</td>
+              <td class="p-2.5">${v.Sut_MPa} MPa</td>
+              <td class="p-2.5">${v.Sy_MPa} MPa</td>
+              <td class="p-2.5">${v.BHN}</td>
+              <td class="p-2.5">${v.Sat_MPa} MPa</td>
+              <td class="p-2.5">${v.Sac_MPa} MPa</td>
+            </tr>`;
+        }
+
+        const sTable = document.getElementById('mat-spring-table');
+        sTable.innerHTML = '';
+        for (const [k, v] of Object.entries(dataS.materials)) {
+          sTable.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5 font-medium">${v.name}</td>
+              <td class="p-2.5">${v.shear_modulus_G_GPa} GPa</td>
+              <td class="p-2.5">${v.elastic_modulus_E_GPa} GPa</td>
+              <td class="p-2.5">${v.max_service_temp_C} &deg;C</td>
+              <td class="p-2.5 text-slate-500">${v.description}</td>
+            </tr>`;
+        }
+      } catch (err) {
+        console.error('Failed to load materials:', err);
+      }
+    }
+  </script>
+</body>
+</html>

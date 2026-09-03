@@ -1,63 +1,32 @@
-﻿"""
-Gear / Spring Design Calculator API
-=====================================
-A FastAPI application implementing standard mechanical engineering design
-formulas for gears (AGMA 2001-D04) and springs (IS 7907).
-
-Author : Mech Tool API
-Version: 1.0.0
+"""
+Gear / Spring Design Calculator API & Web UI
+============================================
+FastAPI application with AGMA 2001-D04 gear formulas,
+IS 7907 spring formulas, and interactive Web UI.
 """
 
-from fastapi import FastAPI
+import os
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.routers import gear, spring
+from app.materials import GEAR_MATERIALS, SPRING_MATERIALS
+from app.schemas.gear import SpurGearInput
+from app.schemas.spring import CompressionSpringInput
 
-# ---------------------------------------------------------------------------
-# App definition
-# ---------------------------------------------------------------------------
 app = FastAPI(
     title="Gear / Spring Design Calculator API",
-    description="""
-## 🔧 Mechanical Engineering Design Calculator
-
-A REST API implementing standard design formulas for:
-
-### Gear Design (AGMA 2001-D04)
-- **Spur Gears** — Lewis bending stress, AGMA contact stress, module selection
-- **Helical Gears** — Virtual tooth count, helix angle corrections, normal/transverse module
-
-### Spring Design (IS 7907 / IS 4454)
-- **Helical Compression Springs** — Wahl's factor, wire sizing, buckling check
-- **Helical Tension Springs** — Body stress, hook bending stress
-
-### Features
-- Standard module selection (IS/AGMA series)
-- Preferred wire diameter selection (IS 4454 series)
-- Material databases (8 gear materials, 7 spring materials)
-- Automatic safety factor verification
-- Design recommendations
-
-### Units
-All inputs/outputs use **SI units**: N, mm, MPa, kW, RPM
-""",
+    description="AGMA 2001-D04 Gear Design & IS 7907 Spring Design Calculator Suite",
     version="1.0.0",
-    contact={
-        "name": "Mech Tool API",
-        "url": "https://github.com/yourusername/mech-tool-api",
-    },
-    license_info={
-        "name": "MIT",
-    },
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
 
-# ---------------------------------------------------------------------------
-# CORS — allow all origins (adjust for production)
-# ---------------------------------------------------------------------------
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -66,37 +35,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
+# Mount static folder if exists
+static_path = Path(__file__).parent / "static"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
 # Include routers
-# ---------------------------------------------------------------------------
 app.include_router(gear.router)
 app.include_router(spring.router)
 
 
 # ---------------------------------------------------------------------------
-# Root & Health
+# Root UI — Serves the interactive calculator web interface
 # ---------------------------------------------------------------------------
-@app.get("/", tags=["Info"], summary="API information")
-def root():
-    return {
-        "api": "Gear / Spring Design Calculator API",
-        "version": "1.0.0",
-        "standards": ["AGMA 2001-D04", "IS 7907", "IS 4454"],
-        "endpoints": {
-            "docs": "/docs",
-            "redoc": "/redoc",
-            "health": "/health",
-            "gear_spur": "/api/v1/gear/spur",
-            "gear_helical": "/api/v1/gear/helical",
-            "gear_materials": "/api/v1/gear/materials",
-            "spring_compression": "/api/v1/spring/helical-compression",
-            "spring_tension": "/api/v1/spring/helical-tension",
-            "spring_materials": "/api/v1/spring/materials",
-        },
-        "units": "SI — N, mm, MPa, kW, RPM",
-    }
+@app.get("/", response_class=HTMLResponse, tags=["Web UI"], summary="Interactive Web Calculator UI")
+def serve_home(request: Request):
+    index_file = static_path / "index.html"
+    if index_file.exists():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+    return HTMLResponse("<h2>MechCalc API is running. Visit <a href='/docs'>/docs</a></h2>")
 
 
+# ---------------------------------------------------------------------------
+# Health check (used by Railway.app)
+# ---------------------------------------------------------------------------
 @app.get("/health", tags=["Info"], summary="Health check")
 def health():
     return JSONResponse(content={"status": "ok", "api": "Gear/Spring Design Calculator"})
+
+
+# ---------------------------------------------------------------------------
+# Compatibility Endpoints
+# ---------------------------------------------------------------------------
+@app.get("/materials", tags=["Materials"], summary="Combined Materials Catalog")
+def get_all_materials():
+    return {
+        "gear_materials": GEAR_MATERIALS,
+        "spring_materials": SPRING_MATERIALS,
+    }
+
+
+@app.post("/gear", tags=["Gear Design (AGMA)"], summary="Spur gear calculation (alias)")
+def gear_alias(data: SpurGearInput):
+    return gear.design_spur(data)
+
+
+@app.post("/spring", tags=["Spring Design (IS 7907)"], summary="Compression spring calculation (alias)")
+def spring_alias(data: CompressionSpringInput):
+    return spring.design_compression(data)
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

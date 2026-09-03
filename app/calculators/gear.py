@@ -313,8 +313,25 @@ def design_helical_gear(
     sigma_b_pinion = (Wt * math.cos(psi) * Kv * Ko * Ks * Km) / (F * m_n * Y1)
     Y2 = _geometry_factor_bending(N2v, helix_angle_deg)
     sigma_b_gear = (Wt * math.cos(psi) * Kv * Ko * Ks * Km) / (F * m_n * Y2)
-
     SF_b_pinion = mat_p["Sat"] / sigma_b_pinion
+    SF_b_gear = mat_g["Sat"] / sigma_b_gear
+
+    Ze = ELASTIC_COEFFICIENT.get("steel_steel", 191.0)
+    sigma_H = Ze * math.sqrt(Wt * Ko * Kv * Ks * Km / (d1 * F))
+    SF_H_pinion = mat_p["Sac"] / sigma_H
+    SF_H_gear = mat_g["Sac"] / sigma_H
+
+    centre_distance = (d1 + d2) / 2
+    normal_circular_pitch = math.pi * m_n
+    lead = math.pi * d1 / math.tan(psi)
+    outside_dia_pinion = d1 + 2 * m_n
+    outside_dia_gear = d2 + 2 * m_n
+    speed_gear_rpm = speed_rpm / gear_ratio
+
+    status_bending = "PASS" if SF_b_pinion >= safety_factor_bending and SF_b_gear >= safety_factor_bending else "FAIL"
+    status_contact = "PASS" if SF_H_pinion >= safety_factor_contact and SF_H_gear >= safety_factor_contact else "FAIL"
+
+    return {
         "standard": "AGMA 2001-D04",
         "gear_type": "Helical Gear",
         "inputs": {
