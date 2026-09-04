@@ -461,3 +461,216 @@ function copyResultsJSON() {
     .then(() => alert('JSON copied to clipboard!'))
     .catch(() => alert('Copy failed.'));
 }
+
+// PDF Report Generator (Interactive jsPDF)
+function downloadPDF() {
+  if (!lastCalculatedData || !lastCalculatedData.data) {
+    alert('Please calculate a component first before downloading the PDF report.');
+    return;
+  }
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('PDF library is loading. Please check your internet connection and try again in a few seconds.');
+    return;
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    let y = 16;
+
+    const compType = lastCalculatedData.type || 'Mechanical Component';
+    const data = lastCalculatedData.data;
+    const isPass = data.overall_status === 'PASS';
+
+    // 1. Header Banner
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageWidth, 24, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text('MechEngine CAD — Mechanical Design Report', margin, 11);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(220, 235, 255);
+    doc.text(`Standard: ${data.standard || 'AGMA / IS 7907'} | Generated: ${new Date().toLocaleString()}`, margin, 18);
+
+    y = 32;
+
+    // 2. Component Title & Status Badge
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(15, 23, 42);
+    doc.text(compType.toUpperCase(), margin, y);
+
+    const statusText = isPass ? 'STATUS: PASS (SAFE)' : 'STATUS: FAIL (EXCEEDED)';
+    doc.setFontSize(9.5);
+    const badgeWidth = doc.getTextWidth(statusText) + 8;
+    const badgeX = pageWidth - margin - badgeWidth;
+    if (isPass) {
+      doc.setFillColor(236, 253, 245);
+      doc.setDrawColor(5, 150, 105);
+      doc.setTextColor(5, 150, 105);
+    } else {
+      doc.setFillColor(254, 242, 242);
+      doc.setDrawColor(220, 38, 38);
+      doc.setTextColor(220, 38, 38);
+    }
+    doc.roundedRect(badgeX, y - 5.5, badgeWidth, 7.5, 1.5, 1.5, 'FD');
+    doc.text(statusText, badgeX + 4, y - 0.5);
+
+    y += 8;
+
+    // 3. 2D Canvas Schematic Image
+    const canvas = document.getElementById('schematic-canvas');
+    if (canvas) {
+      try {
+        const canvasImg = canvas.toDataURL('image/png');
+        const imgWidth = pageWidth - (margin * 2);
+        const imgHeight = (canvas.height / canvas.width) * imgWidth;
+        doc.setDrawColor(226, 232, 240);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(margin, y, imgWidth, imgHeight, 2, 2, 'FD');
+        doc.addImage(canvasImg, 'PNG', margin, y, imgWidth, imgHeight);
+        y += imgHeight + 8;
+      } catch (err) {
+        console.warn('Canvas image embed note:', err);
+      }
+    }
+
+    function printSectionTitle(title) {
+      if (y > 265) { doc.addPage(); y = 16; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(37, 99, 235);
+      doc.text(title, margin, y);
+      y += 2;
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.4);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+    }
+
+    function printKeyValueGrid(items) {
+      doc.setFontSize(8);
+      const colWidth = (pageWidth - (margin * 2) - 6) / 2;
+      for (let i = 0; i < items.length; i += 2) {
+        const item1 = items[i];
+        const item2 = items[i + 1];
+
+        if (item1) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 116, 139);
+          doc.text(String(item1[0]), margin, y);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text(String(item1[1]), margin + 50, y);
+        }
+
+        if (item2) {
+          const col2X = margin + colWidth + 6;
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 116, 139);
+          doc.text(String(item2[0]), col2X, y);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text(String(item2[1]), col2X + 50, y);
+        }
+
+        y += 4.8;
+        if (y > 275) { doc.addPage(); y = 16; }
+      }
+      y += 3;
+    }
+
+    // 4. Design Values
+    if (data.design_values) {
+      printSectionTitle('1. COMPUTED DESIGN VALUES & GEOMETRY');
+      const dvItems = [];
+      for (const [k, v] of Object.entries(data.design_values)) {
+        const label = k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        dvItems.push([label, v]);
+      }
+      printKeyValueGrid(dvItems);
+    }
+
+    // 5. Stress Analysis
+    if (data.stress_analysis) {
+      printSectionTitle('2. STRESS ANALYSIS & VERIFICATION');
+      const saItems = [];
+      const sa = data.stress_analysis;
+      if (sa.bending && sa.bending.pinion_bending_stress_MPa !== undefined) {
+        saItems.push(['Pinion Bending Stress', `${sa.bending.pinion_bending_stress_MPa} MPa`]);
+        saItems.push(['Allowable Bending Sat', `${sa.bending.pinion_allowable_bending_MPa} MPa`]);
+        saItems.push(['Bending Safety Factor', sa.bending.pinion_bending_SF]);
+        saItems.push(['Bending Status', sa.bending.status]);
+      }
+      if (sa.contact && sa.contact.contact_stress_MPa !== undefined) {
+        saItems.push(['Contact Stress (Hertz)', `${sa.contact.contact_stress_MPa} MPa`]);
+        saItems.push(['Allowable Contact Sac', `${sa.contact.pinion_allowable_contact_MPa} MPa`]);
+        saItems.push(['Contact Safety Factor', sa.contact.pinion_contact_SF]);
+        saItems.push(['Contact Status', sa.contact.status]);
+      }
+      if (sa.actual_shear_stress_tau_MPa !== undefined) {
+        saItems.push(['Actual Shear Stress', `${sa.actual_shear_stress_tau_MPa} MPa`]);
+        saItems.push(['Allowable Shear Stress', `${sa.allowable_shear_stress_MPa} MPa`]);
+        saItems.push(['Actual Safety Factor', sa.actual_safety_factor]);
+        saItems.push(['Stress Status', sa.status]);
+      }
+      if (sa.body_shear_stress_tau_MPa !== undefined) {
+        saItems.push(['Body Shear Stress', `${sa.body_shear_stress_tau_MPa} MPa`]);
+        saItems.push(['Allowable Shear Stress', `${sa.allowable_shear_stress_MPa} MPa`]);
+        saItems.push(['Hook Bending Stress', `${sa.hook_bending_stress_MPa} MPa`]);
+        saItems.push(['Hook Status', sa.hook_status]);
+      }
+      printKeyValueGrid(saItems);
+    }
+
+    // 6. Inputs
+    if (data.inputs) {
+      printSectionTitle('3. INPUT SPECIFICATIONS');
+      const inpItems = [];
+      for (const [k, v] of Object.entries(data.inputs)) {
+        const label = k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        inpItems.push([label, v]);
+      }
+      printKeyValueGrid(inpItems);
+    }
+
+    // 7. Recommendations
+    if (data.recommendations && data.recommendations.length > 0) {
+      printSectionTitle('4. ENGINEERING RECOMMENDATIONS');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(51, 65, 85);
+      const recText = data.recommendations.join('\n• ');
+      const splitText = doc.splitTextToSize('• ' + recText, pageWidth - (margin * 2));
+      doc.text(splitText, margin, y);
+      y += (splitText.length * 4.2) + 4;
+    }
+
+    // Footer on all pages
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, 287, pageWidth - margin, 287);
+      doc.text('MechEngine CAD Studio — Certified Mechanical Design Suite', margin, 291);
+      doc.text(`Page ${p} of ${pageCount}`, pageWidth - margin, 291, { align: 'right' });
+    }
+
+    const cleanFilename = compType.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_report.pdf';
+    doc.save(cleanFilename);
+
+  } catch (err) {
+    console.error('PDF Generation Error:', err);
+    alert('Failed to generate PDF: ' + err.message);
+  }
+}
